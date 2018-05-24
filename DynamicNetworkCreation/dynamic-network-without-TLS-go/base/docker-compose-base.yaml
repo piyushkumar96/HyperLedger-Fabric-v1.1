@@ -1,0 +1,63 @@
+version: '2'
+
+services:
+
+  orderer.example.com:
+    container_name: orderer.example.com
+    image: hyperledger/fabric-orderer:$IMAGE_TAG
+    environment:
+      - ORDERER_GENERAL_LOGLEVEL=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/orderer.genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=OrdererMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      # enabled TLS
+      - ORDERER_GENERAL_TLS_ENABLED=false
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    volumes:
+    - ../channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+    - ../crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/msp:/var/hyperledger/orderer/msp
+    - orderer.example.com:/var/hyperledger/production/orderer
+    ports:
+      - 7050:7050
+
+  peer0.who.example.com:
+    container_name: peer0.who.example.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer0.who.example.com
+      - CORE_PEER_ADDRESS=peer0.who.example.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.who.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.who.example.com:7051
+      - CORE_PEER_LOCALMSPID=whoMSP
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../crypto-config/peerOrganizations/who.example.com/peers/peer0.who.example.com/msp:/etc/hyperledger/fabric/msp
+        - peer0.who.example.com:/var/hyperledger/production
+    ports:
+      - 7051:7051
+      - 7053:7053
+
+  peer1.who.example.com:
+    container_name: peer1.who.example.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer1.who.example.com
+      - CORE_PEER_ADDRESS=peer1.who.example.com:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.who.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.who.example.com:7051
+      - CORE_PEER_LOCALMSPID=whoMSP
+    volumes:
+        - /var/run/:/host/var/run/
+        - ../crypto-config/peerOrganizations/who.example.com/peers/peer1.who.example.com/msp:/etc/hyperledger/fabric/msp
+        - peer1.who.example.com:/var/hyperledger/production
+
+    ports:
+      - 7061:7051
+      - 7063:7053
